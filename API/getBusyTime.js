@@ -11,15 +11,23 @@ const timeMax = "2025-10-31T23:59:59Z";
  * @param {string} calendarId - The ID of the Google Calendar.
  * @param {string} timeMin - The start time in ISO format.
  * @param {string} timeMax - The end time in ISO format.
+ * @returns {Promise<{busyIntervals: {start: Date, end: Date}[], freeIntervals: {start: Date, end: Date}[]}>}
  */
-function getBusyTimeIntervals(calendarId, timeMin, timeMax) {
+function getFreeBusyTimeIntervals(calendarId, timeMin, timeMax) {
   return fetchICalData(
     new URL(
       `https://calendar.google.com/calendar/ical/${calendarId}/public/basic.ics`
     )
   )
     .then((icalData) => {
-      return parseICalData(icalData, timeMin, timeMax);
+      const { busyEvents, freeEvents } = parseICalData(
+        icalData,
+        timeMin,
+        timeMax
+      );
+      const busyIntervals = mergeEvents(busyEvents);
+      const freeIntervals = mergeEvents(freeEvents);
+      return { busyIntervals, freeIntervals };
     })
     .catch((error) => {
       throw new Error(
@@ -30,6 +38,7 @@ function getBusyTimeIntervals(calendarId, timeMin, timeMax) {
 
 /**
  * performing api request - NO PROXY SUPPORT
+ * O(n)
  * @param {string|URL} icalUrl
  */
 function fetchICalData(icalUrl) {
@@ -37,7 +46,9 @@ function fetchICalData(icalUrl) {
     https
       .get(icalUrl, (response) => {
         if (response.statusCode !== 200) {
-          reject(`Failed to fetch iCal data: ${response.statusCode}`);
+          reject(
+            new Error(`Failed to fetch iCal data: ${response.statusCode}`)
+          );
           return;
         }
 
@@ -57,16 +68,20 @@ function fetchICalData(icalUrl) {
 }
 
 function parseICalData(icalData, timeMin, timeMax) {
-  const events = [];
+  const busyEvents = [];
+  const freeEvents = [];
+  let isBusy = null;
   const lines = icalData.split("\n");
 
   let event = null;
   for (const line of lines) {
     if (line.startsWith("BEGIN:VEVENT")) {
       event = {};
+      isBusy = null;
     } else if (line.startsWith("END:VEVENT")) {
       if (event && event.start && event.end) {
-        events.push(event);
+        if (isBusy) busyEvents.push(event);
+        else freeEvents.push(event);
       }
       event = null;
     } else if (event) {
@@ -74,19 +89,50 @@ function parseICalData(icalData, timeMin, timeMax) {
         event.start = parseICalDate(line.replace("DTSTART:", "").trim());
       } else if (line.startsWith("DTEND:")) {
         event.end = parseICalDate(line.replace("DTEND:", "").trim());
+      } else if (line.startsWith("TRANSP:")) {
+        isBusy = line.replace("TRANSP:", "").trim() === "OPAQUE";
       }
     }
   }
 
-  const filteredEvents = events.filter((event) => {
-    return event.start >= new Date(timeMin) && event.end <= new Date(timeMax);
-  });
+  const filteredEvents = (eventList) =>
+    eventList.filter((event) => {
+      return event.start >= new Date(timeMin) && event.end <= new Date(timeMax);
+    });
 
-  return filteredEvents;
+  return {
+    busyEvents: filteredEvents(busyEvents),
+    freeEvents: filteredEvents(freeEvents),
+  };
+}
+
+// O(nlogn) because of sorting
+function mergeEvents(events) {
+  if (events.length === 0) return [];
+
+  // event are not sorted by start date initially - they will be written in the order they was registeres in the iCal file
+  events.sort((a, b) => a.start - b.start);
+
+  const mergedEvents = [];
+  let currentEvent = events[0];
+
+  for (let i = 1; i < events.length; i++) {
+    const event = events[i];
+    if (event.start <= currentEvent.end) {
+      currentEvent.end = new Date(Math.max(currentEvent.end, event.end));
+    } else {
+      mergedEvents.push(currentEvent);
+      currentEvent = event;
+    }
+  }
+
+  mergedEvents.push(currentEvent);
+
+  return mergedEvents;
 }
 
 /**
- * Parses an iCal date string in the format 'YYYYMMDDTHHmmssZ' to a JavaScript Date object.
+ * Helper parser of iCal date string in the format 'YYYYMMDDTHHmmssZ' to a JavaScript Date object.
  * @param {string} icalDate - The iCal date string.
  * @returns {Date} - The parsed Date object.
  */
@@ -102,9 +148,19 @@ function parseICalDate(icalDate) {
 }
 
 (async () => {
-  const result = await getBusyTimeIntervals(calendarId, timeMin, timeMax);
+  const { busyIntervals, freeIntervals } = await getFreeBusyTimeIntervals(
+    calendarId,
+    timeMin,
+    timeMax
+  );
+
   console.log(`Busy intervals in calendar with Id = ${calendarId}: `);
-  result.forEach((event) => {
+  busyIntervals.forEach((event) => {
+    console.log(`${event.start} - ${event.end}`);
+  });
+  console.log("===================================================");
+  console.log(`Free intervals in calendar with Id = ${calendarId}: `);
+  freeIntervals.forEach((event) => {
     console.log(`${event.start} - ${event.end}`);
   });
 })();
