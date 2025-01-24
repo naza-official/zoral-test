@@ -38,7 +38,6 @@ function getFreeBusyTimeIntervals(calendarId, timeMin, timeMax) {
 
 /**
  * performing api request - NO PROXY SUPPORT
- * O(n)
  * @param {string|URL} icalUrl
  */
 function fetchICalData(icalUrl) {
@@ -67,6 +66,7 @@ function fetchICalData(icalUrl) {
   });
 }
 
+//O(n)
 function parseICalData(icalData, timeMin, timeMax) {
   const busyEvents = [];
   const freeEvents = [];
