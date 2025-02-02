@@ -30,6 +30,13 @@ JOIN `group` g ON gm.groupID = g.id
 WHERE gm.userID = u.id AND g.name LIKE 'TEST-%'
 );
 
+<!--
+SELECT u.firstName, u.lastName
+FROM user u
+LEFT JOIN groupMembership gm ON gm.userID = u.id
+LEFT JOIN `group` g ON gm.groupID = g.id AND g.name LIKE 'TEST-%'
+WHERE u.firstName = 'Victor' AND g.id IS NULL; -->
+
 ### 3.4
 
 SELECT u.firstName, u.lastName, g.name

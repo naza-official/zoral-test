@@ -1,9 +1,8 @@
 const https = require("https");
 const { URL } = require("node:url");
 
-const calendarId =
-  "a2f28b5b18eeaae6748d838abe646185d933079038ea1096c3e1c8149c06e883@group.calendar.google.com";
-const timeMin = "2023-10-01T00:00:00Z";
+const calendarId = "fa6ggft0hja55o11f3gec5oaq0@group.calendar.google.com";
+const timeMin = "2024-02-24T00:00:00Z";
 const timeMax = "2025-10-31T23:59:59Z";
 
 /**
@@ -20,6 +19,7 @@ function getFreeBusyTimeIntervals(calendarId, timeMin, timeMax) {
     )
   )
     .then((icalData) => {
+      console.log("icalData", icalData);
       const { busyEvents, freeEvents } = parseICalData(
         icalData,
         timeMin,

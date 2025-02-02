@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "v2:api:freeBusy": "node ./V2/freeBusyAPI.js",
+    "v2:js:projection": "node ./V2/projection.js"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
