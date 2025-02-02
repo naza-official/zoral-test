@@ -23,6 +23,8 @@ _./V2/freeBusyAPI.js_
 npm run v2:api:freeBusy
 ```
 
+Don't forget to specify a valid API token to access the Google API.
+
 **Input:**
 
 ```javascript

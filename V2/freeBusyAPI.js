@@ -1,6 +1,6 @@
 const { httpRequest, HttpError } = require("./helpers/http.js");
 
-const API_KEY = "AIzaSyCXcCK8ilHCWr96R8sJTsNBgIn-l4DR7yc";
+const API_KEY = "AIzaSyCXcCK8ilHCWr96R8sJTsNBgIn-l4DR7yc"; // restricted key
 // const calendarId =
 //   "a2f28b5b18eeaae6748d838abe646185d933079038ea1096c3e1c8149c06e883@group.calendar.google.com";
 const calendarId = "fa6ggft0hja55o11f3gec5oaq0@group.calendar.google.com";
